@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/app/src/main/java/ofek/ron/tasteamovie/App.java" charset="windows-1255" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/ofek/ron/tasteamovie/FetchMoviesIntentService.java" charset="windows-1255" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/ofek/ron/tasteamovie/MainActivity.java" charset="windows-1255" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/ofek/ron/tasteamovie/MovieFragment.java" charset="windows-1255" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/ofek/ron/tasteamovie/MoviesDatabaseHandle.java" charset="windows-1255" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/ofek/ron/tasteamovie/MoviesFragment.java" charset="windows-1255" />
+    <file url="file://$PROJECT_DIR$/app/src/main/java/ofek/ron/tasteamovie/Stopper.java" charset="windows-1255" />
+    <file url="PROJECT" charset="UTF-8" />
+  </component>
+</project>
