@@ -20,6 +20,7 @@ import android.widget.VideoView;
 
 import com.squareup.picasso.Picasso;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -31,7 +32,7 @@ public class MovieFragment extends Fragment {
 
     // TODO: Rename and change types of parameters
     private ofek.ron.tasteamovie.MoviesDatabaseHandle.Movie movie;
-
+    private ArrayList<WebView> webviews = new ArrayList<>();
 
     public MovieFragment() {
         // Required empty public constructor
@@ -44,6 +45,27 @@ public class MovieFragment extends Fragment {
             movie = (ofek.ron.tasteamovie.MoviesDatabaseHandle.Movie) getArguments().getSerializable(ARG_PARAM1);
         }
 
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        for (WebView wv : webviews)
+            wv.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        for (WebView wv : webviews)
+            wv.onResume();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        for (WebView wv : webviews)
+            wv.destroy();
     }
 
     @Override
@@ -87,7 +109,9 @@ public class MovieFragment extends Fragment {
             @Override
             protected void onPostExecute(List<ofek.ron.tasteamovie.MoviesDatabaseHandle.Video> vs) {
                 for ( final ofek.ron.tasteamovie.MoviesDatabaseHandle.Video v : vs) {
-                    embedVideo(trailers, new WebView(getActivity()), v.getKey());
+                    WebView webView = new WebView(getActivity());
+                    webviews.add(webView);
+                    embedVideo(trailers, webView, v.getKey());
                 }
             }
         }).execute();
