@@ -20,12 +20,15 @@ public class MoviesDatabaseHandle  {
     private Table<Movie> moviesTable;
     public static final String DATABASE_NAME = "MoviesDatabase";
     private Table<Video> videosTable;
-    private static Object lock = new Object();
     public void clear() {
-        synchronized (lock) {
+
             moviesTable.clear();
             videosTable.clear();
-        }
+
+    }
+
+    public ArrayList<Movie> getAll() {
+        return moviesTable.getAll();
     }
 
 
@@ -49,15 +52,15 @@ public class MoviesDatabaseHandle  {
     }
 
     public long add(Movie m) {
-        synchronized (lock) {
+
             if (!moviesTable.insertIfNotExists(m)) return -1;
             for (Video v : m.videos) {
                 videosTable.insertIfNotExists(v);
             }
             return moviesTable.size();
-        }
+
     }
-    public Table.Handle<Movie> getAll() {
+    public Table.Handle<Movie> getHandle() {
         final Table.Handle<Movie> handle = moviesTable.getHandle("1");
         return new Table.Handle<Movie>() {
             @Override
@@ -68,17 +71,17 @@ public class MoviesDatabaseHandle  {
 
             @Override
             public int count() {
-                synchronized (lock) {
+
                     return handle.count();
-                }
+
             }
 
             @Override
             public Movie get(int i, Movie toBeFilled) {
-                synchronized (lock) {
+
                     Movie movie = handle.get(i, toBeFilled);
                     return movie;
-                }
+
 
             }
 
@@ -90,9 +93,9 @@ public class MoviesDatabaseHandle  {
 
             @Override
             public void invalidate() {
-                synchronized (lock) {
+
                     handle.invalidate();
-                }
+
             }
 
             @Override
@@ -102,14 +105,14 @@ public class MoviesDatabaseHandle  {
         };
     }
     public void release() {
-        synchronized (lock) {
+
             if (moviesDatabase!=null) {
                 moviesDatabase.close();
                 moviesDatabase = null;
             }
             moviesTable = null;
             videosTable = null;
-        }
+
 
     }
     @DataTypeClass(defineKeys = "FOREIGN KEY(movie_id) REFERENCES Movie(id)")

@@ -26,4 +26,10 @@ public class Stopper {
     public long elapsed() {
         return System.currentTimeMillis()-time;
     }
+
+    public void printElapsed(int threshold) {
+        long time = System.currentTimeMillis() - this.time;
+        if (time>=threshold) Log.d(tag,Long.toString(time));
+
+    }
 }

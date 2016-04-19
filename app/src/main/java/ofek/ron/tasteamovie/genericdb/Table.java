@@ -11,6 +11,8 @@ import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 
+import ofek.ron.tasteamovie.Stopper;
+
 public class Table<Item> {
 
 	private String createCreateStatement(final Class<?> clazz) {
@@ -224,7 +226,7 @@ public class Table<Item> {
 		private final Query query;
 		private Cursor cursor;
 		private HandleListener listener;
-
+		private Stopper stopper = new Stopper("HandleValidate");
 		public HandleImpl(final Query q, final String where) {
 			query = q;
 			cursor = query.query();
@@ -257,8 +259,11 @@ public class Table<Item> {
 		}
 
 		public void invalidate() {
+			stopper.restart();
 			cursor = query.query();
 			if (listener!=null)listener.invalidated();
+			stopper.printElapsed(2);
+
 		}
 		public void setListener(HandleListener listener) {
 			this.listener = listener;

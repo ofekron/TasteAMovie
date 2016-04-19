@@ -18,7 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.VideoView;
 
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +66,7 @@ public class MovieFragment extends Fragment {
         super.onDestroy();
         for (WebView wv : webviews)
             wv.destroy();
+        webviews.clear();
     }
 
     @Override
@@ -88,7 +89,7 @@ public class MovieFragment extends Fragment {
         ImageView poster = (ImageView) view.findViewById(R.id.poster);
         Toolbar movieBar = (Toolbar) view.findViewById(R.id.moviebar);
         movieBar.setTitle(movie.getTitle());
-        Picasso.with(getActivity()).load(movie.getPosterPath()).into(poster);
+        Glide.with(getActivity()).load(movie.getPosterPath()).centerCrop().into(poster);
         TextView desc = (TextView) view.findViewById(R.id.description);
         desc.setText(movie.getDescription());
         TextView year = (TextView) view.findViewById(R.id.year);

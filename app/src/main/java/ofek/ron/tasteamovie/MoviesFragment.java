@@ -13,20 +13,18 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.squareup.picasso.Callback;
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestManager;
 
-import ofek.ron.tasteamovie.genericdb.Table;
+import java.util.ArrayList;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -50,12 +48,15 @@ public class MoviesFragment extends Fragment {
     private BroadcastReceiver fetchReciever;
     private LocalBroadcastManager localBroadcastManager;
     private RecyclerView.Adapter adapter;
-    private Table.Handle<MoviesDatabaseHandle.Movie> handle;
+    //private Table.Handle<MoviesDatabaseHandle.Movie> handle;
     private RecyclerView recyclerView;
     private SwipeRefreshLayout swiperefresh;
     private MoviesDatabaseHandle moviesDatabaseHandle;
     private boolean isFetching;
     private GridLayoutManager layoutManager;
+    private RequestManager glide;
+    private ArrayList<MoviesDatabaseHandle.Movie> list;
+    private int currentListSize;
 
 
     public static MoviesFragment newInstance() {
@@ -69,7 +70,13 @@ public class MoviesFragment extends Fragment {
     public MoviesFragment() {
         // Required empty public constructor
     }
+    Runnable notifyOnFetchedOne = new Runnable() {
 
+        @Override
+        public void run() {
+
+        }
+    };
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,20 +84,21 @@ public class MoviesFragment extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+        glide = Glide.with(getActivity());
+        moviesDatabaseHandle = new MoviesDatabaseHandle(getActivity());
+        new UpdateListAsyncTask().execute();
         localBroadcastManager = LocalBroadcastManager.getInstance(getActivity());
         fetchReciever = new BroadcastReceiver() {
             public int startIndex;
 
             @Override
-            public void onReceive(Context context, Intent intent) {
+            public void onReceive(Context context, final Intent intent) {
                 if (adapter != null ) {
 
                     switch (intent.getIntExtra(FetchMoviesIntentService.ARG_WHAT_IS_IT_ABOUT,0)) {
                         case FetchMoviesIntentService.BROADCAST_FETCHED_A_MOVIE:
-                            handle.invalidate();
-                            int index = intent.getIntExtra(FetchMoviesIntentService.ARG_LAST_FETCH_INDEX, -1);
-                            adapter.notifyItemInserted(index);
-                            Log.d("insert",index+"/"+handle.count());
+                            int intExtra = intent.getIntExtra(FetchMoviesIntentService.ARG_LAST_FETCH_INDEX, -1);
+                            new UpdateListAsyncTask().execute(intExtra);
                             break;
                         case FetchMoviesIntentService.BROADCAST_FETCH_DONE:
                             swiperefresh.setRefreshing(false);
@@ -110,6 +118,25 @@ public class MoviesFragment extends Fragment {
         };
     }
 
+    private class UpdateListAsyncTask extends  AsyncTask<Integer, Integer, Integer> {
+        private ArrayList<MoviesDatabaseHandle.Movie> locallist;
+
+        @Override
+        protected Integer doInBackground(Integer... params) {
+            locallist = moviesDatabaseHandle.getAll();
+            return params==null || params.length==0 ? null : params[0];
+        }
+
+        @Override
+        protected void onPostExecute(Integer onPost) {
+            super.onPostExecute(onPost);
+            list = locallist;
+            currentListSize = list.size();
+            if (onPost!=null) adapter.notifyItemInserted(onPost);
+            else adapter.notifyDataSetChanged();
+        }
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -118,25 +145,22 @@ public class MoviesFragment extends Fragment {
     }
 
 
-    private class MovieViewHolder extends RecyclerView.ViewHolder implements Callback {
+    private class MovieViewHolder extends RecyclerView.ViewHolder  {
 
         private final ImageView image;
-        private final Picasso picasso;
         private final RelativeLayout.LayoutParams layoutParams;
         private final TextView index;
         private final TextView indexBig;
         private final View parent;
-        private final OvershootInterpolator overshootInterpolator;
         private final TextView name;
         private MoviesDatabaseHandle.Movie holdingMovie = new MoviesDatabaseHandle.Movie();
-
         public MovieViewHolder(View itemView) {
 
             super(itemView);
             parent = itemView;
 
             image = (ImageView) itemView.findViewById(R.id.iv);
-            picasso = Picasso.with(getActivity());
+
 
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -150,48 +174,23 @@ public class MoviesFragment extends Fragment {
             indexBig = (TextView) itemView.findViewById(R.id.textViewBehind);
             name = (TextView) itemView.findViewById(R.id.name);
             layoutParams = new RelativeLayout.LayoutParams(image.getWidth(), image.getHeight());
-            overshootInterpolator = new OvershootInterpolator(2);
+
         }
 
         public void setMovieHolding(MoviesDatabaseHandle.Movie movie,int i) {
             image.setImageBitmap(null);
+            holdingMovie = movie;
             name.setText(movie.getTitle());
-            if ( image.getHeight()!=0 && image.getWidth()!=0) {
-                layoutParams.height=image.getHeight();
-                layoutParams.width=image.getWidth();
-                image.setLayoutParams(layoutParams);
-                picasso.cancelRequest(image);
-                picasso.load(movie.getPosterPath()).fit().centerCrop().noFade().noPlaceholder().into(image, this);
-                index.setVisibility(View.VISIBLE);
-                indexBig.setVisibility(View.VISIBLE);
-                index.setText(Integer.toString(i + 1));
-                indexBig.setText(Integer.toString(i+1));
-
-            } else {
-                picasso.cancelRequest(image);
-                picasso.load(movie.getPosterPath()).into(image,this);
-                index.setVisibility(View.INVISIBLE);
-                indexBig.setVisibility(View.INVISIBLE);
-            }
-
-
+            glide.load(movie.getPosterPath()).centerCrop().into(image);
+            index.setText(Integer.toString(i + 1));
+            indexBig.setText(Integer.toString(i + 1));
         }
 
         public MoviesDatabaseHandle.Movie getMovieObject() {
             return holdingMovie;
         }
 
-        @Override
-        public void onSuccess() {
-            image.setScaleX(0.75f);
-            image.setScaleY(0.75f);
-            image.animate().scaleX(1).scaleY(1).setInterpolator(overshootInterpolator).setDuration(250);
-        }
 
-        @Override
-        public void onError() {
-
-        }
     }
 
     @Override
@@ -205,32 +204,67 @@ public class MoviesFragment extends Fragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
-        layoutManager = new GridLayoutManager(getActivity(), 2);
+        layoutManager = new GridLayoutManager(getActivity(), getResources().getInteger(R.integer.screen_width_units));
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setHasFixedSize(true);
-
+        recyclerView.setItemViewCacheSize(50);
         adapter = createAdapter();
+        final Intent serviceIntent = new Intent(getActivity(), FetchMoviesIntentService.class);
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            /**
+             * Callback method to be invoked when RecyclerView's scroll state changes.
+             *
+             * @param recyclerView The RecyclerView whose scroll state has changed.
+             * @param newState     The updated scroll state. One of {@link #SCROLL_STATE_IDLE},
+             *                     {@link #SCROLL_STATE_DRAGGING} or {@link #SCROLL_STATE_SETTLING}.
+             */
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                if (RecyclerView.SCROLL_STATE_IDLE != newState) return;
+                final int whenToFetch = currentListSize - 10;
+                int position = layoutManager.findLastVisibleItemPosition();
+                if (!isFetching && position > whenToFetch) {
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            getContext().startService(serviceIntent);
+                        }
+                    });
+                }
+            }
+
+            /**
+             * Callback method to be invoked when the RecyclerView has been scrolled. This will be
+             * called after the scroll has completed.
+             * <p/>
+             * This callback will also be called if visible item range changes after a layout
+             * calculation. In that case, dx and dy will be 0.
+             *
+             * @param recyclerView The RecyclerView which scrolled.
+             * @param dx           The amount of horizontal scroll.
+             * @param dy           The amount of vertical scroll.
+             */
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+            }
+        });
+
         swiperefresh = (SwipeRefreshLayout) view.findViewById(R.id.swiperefresh);
         swiperefresh.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-
                         moviesDatabaseHandle.clear();
-                        handle.invalidate();
-                        adapter.notifyDataSetChanged();
-                        FetchMoviesIntentService.rewind();
-                        getActivity().runOnUiThread(new Runnable() {
+                        AsyncTask.execute(new Runnable() {
                             @Override
                             public void run() {
-                                AsyncTask.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        FetchMoviesIntentService.start();
-                                    }
-                                });
+                                FetchMoviesIntentService.rewind();
+                                FetchMoviesIntentService.start();
                             }
                         });
+                        new UpdateListAsyncTask().execute();
+
 
                     }
                 }
@@ -243,43 +277,28 @@ public class MoviesFragment extends Fragment {
     }
 
     private RecyclerView.Adapter createAdapter() {
-        final Intent serviceIntent = new Intent(getActivity(), FetchMoviesIntentService.class);
+
         return new RecyclerView.Adapter() {
-            ofek.ron.tasteamovie.Stopper s = new Stopper();
+            ofek.ron.tasteamovie.Stopper s = new Stopper("onViewAttachedToWindow");
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+
                 View v = LayoutInflater.from(parent.getContext())
                         .inflate(R.layout.view_movie, parent, false);
-                return new MovieViewHolder(v);
+                MovieViewHolder movieViewHolder = new MovieViewHolder(v);
+
+                return movieViewHolder;
             }
 
             @Override
             public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
                 MovieViewHolder holder1 = (MovieViewHolder) holder;
-                holder1.setMovieHolding(handle.get(position, holder1.getMovieObject()), position);
-
-
-            }
-
-            @Override
-            public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
-                super.onViewAttachedToWindow(holder);
-                final int whenToFetch = getItemCount() - 10;
-                int position = holder.getAdapterPosition();
-                if (!isFetching && position > whenToFetch && s.elapsed()>1000 ) {
-                    s.restart();
-                    AsyncTask.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            getContext().startService(serviceIntent);
-                        }
-                    });
-                }
+                holder1.setMovieHolding(list.get(position), position);
             }
 
             @Override
             public int getItemCount() {
-                return handle.count();
+                return currentListSize;
             }
         };
     };
@@ -294,8 +313,9 @@ public class MoviesFragment extends Fragment {
             throw new ClassCastException(activity.toString()
                     + " must implement OnMovieClickListener");
         }
-        moviesDatabaseHandle = new MoviesDatabaseHandle(getActivity());
-        handle = moviesDatabaseHandle.getAll();
+
+        //handle = moviesDatabaseHandle.getHandle();
+
     }
     @Override
     public void onResume() {
@@ -326,7 +346,7 @@ public class MoviesFragment extends Fragment {
      * <p/>
      * See the Android Training lesson <a href=
      * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating picasso Other Fragments</a> for more information.
+     * >Communicating glide Other Fragments</a> for more information.
      */
     public interface OnMovieClickListener {
         // TODO: Update argument type and name
