@@ -148,20 +148,11 @@ public class MoviesFragment extends Fragment {
     private class MovieViewHolder extends RecyclerView.ViewHolder  {
 
         private final ImageView image;
-        private final RelativeLayout.LayoutParams layoutParams;
-        private final TextView index;
-        private final TextView indexBig;
-        private final View parent;
-        private final TextView name;
         private MoviesDatabaseHandle.Movie holdingMovie = new MoviesDatabaseHandle.Movie();
         public MovieViewHolder(View itemView) {
 
             super(itemView);
-            parent = itemView;
-
             image = (ImageView) itemView.findViewById(R.id.iv);
-
-
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -170,20 +161,12 @@ public class MoviesFragment extends Fragment {
                     }
                 }
             });
-            index = (TextView) itemView.findViewById(R.id.textView);
-            indexBig = (TextView) itemView.findViewById(R.id.textViewBehind);
-            name = (TextView) itemView.findViewById(R.id.name);
-            layoutParams = new RelativeLayout.LayoutParams(image.getWidth(), image.getHeight());
-
         }
 
         public void setMovieHolding(MoviesDatabaseHandle.Movie movie,int i) {
             image.setImageBitmap(null);
             holdingMovie = movie;
-            name.setText(movie.getTitle());
             glide.load(movie.getPosterPath()).centerCrop().into(image);
-            index.setText(Integer.toString(i + 1));
-            indexBig.setText(Integer.toString(i + 1));
         }
 
         public MoviesDatabaseHandle.Movie getMovieObject() {
@@ -295,6 +278,8 @@ public class MoviesFragment extends Fragment {
                 MovieViewHolder holder1 = (MovieViewHolder) holder;
                 holder1.setMovieHolding(list.get(position), position);
             }
+
+
 
             @Override
             public int getItemCount() {
