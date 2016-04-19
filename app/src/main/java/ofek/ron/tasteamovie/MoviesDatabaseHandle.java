@@ -20,15 +20,18 @@ public class MoviesDatabaseHandle  {
     private Table<Movie> moviesTable;
     public static final String DATABASE_NAME = "MoviesDatabase";
     private Table<Video> videosTable;
+    private static Object lock = new Object();
     public void clear() {
-
-            moviesTable.clear();
-            videosTable.clear();
+        moviesTable.clear();
+        videosTable.clear();
 
     }
 
     public ArrayList<Movie> getAll() {
-        return moviesTable.getAll();
+        synchronized (lock) {
+            return moviesTable.getAll();
+        }
+
     }
 
 
@@ -52,12 +55,14 @@ public class MoviesDatabaseHandle  {
     }
 
     public long add(Movie m) {
-
+        synchronized (lock) {
             if (!moviesTable.insertIfNotExists(m)) return -1;
             for (Video v : m.videos) {
                 videosTable.insertIfNotExists(v);
             }
             return moviesTable.size();
+        }
+
 
     }
     public Table.Handle<Movie> getHandle() {
